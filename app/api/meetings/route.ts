@@ -10,6 +10,14 @@ interface Meeting {
   deleteVotes: number;
 }
 
+interface MeetingRow {
+  id: string;
+  title: string;
+  time: string;
+  link: string | null;
+  deletevotes: string; 
+}
+
 export async function GET(request: NextRequest) {
   try {
     const cutoffTime = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
@@ -28,7 +36,9 @@ export async function GET(request: NextRequest) {
       ORDER BY m.time ASC;
     `, [cutoffTime]);
 
-    const meetings: Meeting[] = res.rows.map(row => ({
+    const rows: MeetingRow[] = res.rows;
+
+    const meetings: Meeting[] = rows.map((row) => ({
       id: row.id,
       title: row.title,
       time: new Date(row.time).toISOString(),
