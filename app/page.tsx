@@ -375,14 +375,22 @@ export default function Dashboard() {
 
         {!isAddingNewMeeting && currentMeeting.link && currentMeeting.link.trim() !== '' && (
           <div className="mt-8 text-center">
-            <Button
-              variant="primary"
-              className="w-full"
-              onClick={() => window.open(currentMeeting.link, '_blank')}
-            >
-              Join Meeting
-            </Button>
-          </div>
+  <Button
+    variant="primary"
+    className="w-full"
+    onClick={() => {
+      const meetingLink = currentMeeting.link.trim();
+      if (meetingLink) {
+        const isAbsoluteURL = /^https?:\/\//.test(meetingLink);
+        const formattedLink = isAbsoluteURL ? meetingLink : `https://${meetingLink}`;
+        window.open(formattedLink, '_blank', 'noopener,noreferrer');
+      }
+    }}
+  >
+    Join Meeting
+  </Button>
+</div>
+
         )}
       </div>
     </div>
