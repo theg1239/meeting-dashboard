@@ -165,7 +165,7 @@ export async function DELETE(
         { status: 200 }
       );
     } else {
-      const votesNeeded = 5 - voteCount;
+      const votesNeeded = 10 - voteCount;
       return NextResponse.json(
         { message: `Vote recorded. ${votesNeeded} more vote(s) needed to delete.` },
         { status: 200 }
