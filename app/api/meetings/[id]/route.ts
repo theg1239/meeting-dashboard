@@ -143,7 +143,7 @@ export async function DELETE(
 
     const voteCount = parseInt(voteRes.rows[0].vote_count, 10);
 
-    if (voteCount >= 5) {
+    if (voteCount >= 10) {
       await query(
         `
         DELETE FROM meetings
