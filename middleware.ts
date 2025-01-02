@@ -1,14 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-declare module 'next/server' {
-  interface NextRequest {
-    geo?: {
-      city?: string;
-      country?: string;
-      region?: string;
-    };
-  }
-}
+import { geolocation } from '@vercel/functions';
 
 const meetingsApiPath = /^\/api\/meetings\/[^\/]+$/;
 
@@ -16,8 +7,8 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (meetingsApiPath.test(pathname) && (req.method === 'PATCH' || req.method === 'DELETE')) {
-    const geo = req.geo ?? {}; 
-    const ip = req.headers.get('x-forwarded-for') || 'Unknown IP';
+    const geo = geolocation(req); 
+    const ip = req.headers.get('x-forwarded-for') || 'Unknown IP'; 
 
     const match = pathname.match(/^\/api\/meetings\/([^\/]+)$/);
     const meetingId = match ? match[1] : 'Unknown Meeting ID';
