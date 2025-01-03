@@ -42,6 +42,42 @@ export async function PATCH(
       );
     }
 
+    let shortUrl: string | null = null;
+
+    if (link) {
+      const urlShortenerBaseUrl = process.env.URL_SHORTENER_BASE_URL;
+
+      if (!urlShortenerBaseUrl) {
+        console.error('URL_SHORTENER_BASE_URL is not defined in environment variables.');
+        return NextResponse.json(
+          { error: 'URL shortener service is not configured.' },
+          { status: 500 }
+        );
+      }
+
+      try {
+        const shortenResponse = await fetch(`${urlShortenerBaseUrl}/api/shorten`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalUrl: link }),
+        });
+
+        if (!shortenResponse.ok) {
+          const errorData = await shortenResponse.json();
+          throw new Error(errorData.error || 'Failed to shorten URL.');
+        }
+
+        const data = await shortenResponse.json();
+        shortUrl = data.shortUrl;
+      } catch (shortenError: any) {
+        console.error('Error shortening URL:', shortenError.message);
+        return NextResponse.json(
+          { error: shortenError.message || 'Failed to shorten URL.' },
+          { status: 500 }
+        );
+      }
+    }
+
     const res = await query(
       `
       UPDATE meetings
@@ -49,7 +85,7 @@ export async function PATCH(
       WHERE id = $4
       RETURNING id, title, time, link;
     `,
-      [title, meetingTime.toISOString(), link || null, id]
+      [title, meetingTime.toISOString(), shortUrl || null, id]
     );
 
     if (res.rowCount === 0) {
