@@ -240,7 +240,7 @@ const Calendar: React.FC<CalendarProps> = ({
 
   return (
     <div className={`w-full max-w-4xl flex flex-col ${
-      isMobile ? 'h-[calc(100vh-120px)] px-2' : 'h-[calc(100vh-240px)]'
+      isMobile ? 'h-[calc(100vh-100px)] px-2' : 'h-[calc(100vh-240px)]'
     } max-h-screen`} style={containerStyle}>
       <div className={`flex justify-between items-center ${isMobile ? 'mb-2' : 'mb-1'}`}>
         <Button 
@@ -278,7 +278,7 @@ const Calendar: React.FC<CalendarProps> = ({
         }`}
         style={{ 
           gridTemplateRows: `repeat(${calendarDays.length / 7}, minmax(${
-            isMobile ? '60px' : '80px'
+            isMobile ? '50px' : '80px'
           }, 1fr))` 
         }}
       >
@@ -298,22 +298,22 @@ const Calendar: React.FC<CalendarProps> = ({
               } ${isToday ? 'border-blue-500' : ''}`}
             >
               <div className={`text-right ${
-                isMobile ? 'text-[10px] mb-0.5' : 'text-xs mb-1'
+                isMobile ? 'text-[9px] mb-0.5' : 'text-xs mb-1'
               } ${
                 isToday ? 'text-blue-400 font-bold' : isCurrentMonth ? 'text-white' : 'text-gray-500'
               }`}>
                 {format(day, 'd')}
               </div>
               
-              <div className={`${isMobile ? 'h-[calc(100%-16px)]' : 'h-[calc(100%-20px)]'} relative`}>
+              <div className={`${isMobile ? 'h-[calc(100%-14px)]' : 'h-[calc(100%-20px)]'} relative`}>
                 {dayMeetings.length > 0 && (
-                  dayMeetings.length <= (isMobile ? 2 : 3) ? (
-                    dayMeetings.slice(0, isMobile ? 2 : 3).map(meeting => (
+                  dayMeetings.length <= (isMobile ? 1 : 3) ? (
+                    dayMeetings.slice(0, isMobile ? 1 : 3).map(meeting => (
                       <div key={meeting.id} className="relative">
                         <div
                           className={`${
                             isMobile 
-                              ? 'text-[10px] p-0.5 mb-0.5'
+                              ? 'text-[9px] p-0.5 mb-0.5'
                               : 'text-[9px] sm:text-xs p-1 mb-1'
                           } bg-blue-900 rounded cursor-pointer hover:bg-blue-800 truncate calendar-event relative`}
                           onClick={(e: React.MouseEvent<HTMLDivElement>) => {
@@ -351,7 +351,7 @@ const Calendar: React.FC<CalendarProps> = ({
                         >
                           <span className="inline-block w-full truncate">
                             {isMobile ? (
-                              `${format(parseISO(meeting.time), 'HH:mm')} ${meeting.title.substring(0, 8)}${meeting.title.length > 8 ? '...' : ''}` // Increased substring from 5 to 8
+                              `${format(parseISO(meeting.time), 'HH:mm')} ${meeting.title.substring(0, 6)}${meeting.title.length > 6 ? '...' : ''}` 
                             ) : (
                               `${format(parseISO(meeting.time), 'HH:mm')} ${meeting.title.length > 10 ? meeting.title.substring(0, 10) + '...' : meeting.title}`
                             )}
@@ -412,28 +412,28 @@ const Calendar: React.FC<CalendarProps> = ({
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
                             className={`absolute z-[9999] bg-gray-800 border-2 border-blue-500 rounded-md ${
-                              isMobile ? 'p-2' : 'p-3'
+                              isMobile ? 'p-1.5' : 'p-3'
                             } shadow-xl`}
                             style={{ 
-                              bottom: i < 14 ? 'auto' : '120%', 
-                              top: i < 14 ? '120%' : 'auto',
+                              bottom: i < 14 ? 'auto' : '110%', 
+                              top: i < 14 ? '110%' : 'auto',
                               left: '50%', 
                               transform: 'translateX(-50%)', 
-                              minWidth: isMobile ? '160px' : '200px',
-                              maxWidth: '90vw',
+                              minWidth: isMobile ? '150px' : '200px',
+                              maxWidth: '85vw',
                               boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)'
                             }}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <h3 className={`font-semibold mb-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                            <h3 className={`font-semibold mb-1.5 ${isMobile ? 'text-[11px]' : 'text-sm'}`}>
                               {format(day, isMobile ? 'MMM d' : 'MMMM d, yyyy')}
                             </h3>
-                            <div className={`overflow-y-auto ${isMobile ? 'max-h-[120px]' : 'max-h-[150px]'}`}>
+                            <div className={`overflow-y-auto ${isMobile ? 'max-h-[100px]' : 'max-h-[150px]'}`}>
                               {dayMeetings.map(meeting => (
                                 <div 
                                   key={meeting.id} 
                                   className={`${
-                                    isMobile ? 'text-[10px] p-1.5 mb-1' : 'text-xs p-2 mb-1'
+                                    isMobile ? 'text-[9px] p-1 mb-0.5' : 'text-xs p-2 mb-1'
                                   } bg-blue-900 rounded cursor-pointer hover:bg-blue-800`}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -450,8 +450,8 @@ const Calendar: React.FC<CalendarProps> = ({
                             
                             {/* Close button */}
                             <button 
-                              className={`absolute ${isMobile ? 'top-0.5 right-0.5' : 'top-1 right-1'} text-gray-400 hover:text-white ${
-                                isMobile ? 'text-sm' : 'text-base'
+                              className={`absolute ${isMobile ? 'top-0 right-0 p-0.5' : 'top-1 right-1'} text-gray-400 hover:text-white ${
+                                isMobile ? 'text-xs' : 'text-base'
                               }`}
                               onClick={(e) => {
                                 e.stopPropagation();

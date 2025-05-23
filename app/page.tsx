@@ -407,11 +407,11 @@ export default function Dashboard() {
               {isAddingNewMeeting ? 'Save Meeting' : 'New Meeting'}
             </Button>
 
-            {!isAddingNewMeeting && meetings.length > 0 && currentMeetingIndex !== null && (
+            {/* {!isAddingNewMeeting && meetings.length > 0 && currentMeetingIndex !== null && (
               <Button variant="destructive" onClick={deleteMeeting} className="w-full">
                 Delete
               </Button>
-            )}
+            )} */}
           </div>
 
           {!isAddingNewMeeting && currentMeeting.link && currentMeeting.link.trim() !== '' && (
