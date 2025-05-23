@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from 'lucide-react'
 import useSWR from 'swr'
 import Button from '@/app/components/ui/button'
 import { v4 as uuidv4 } from 'uuid'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, addMonths } from 'date-fns'
+import Calendar from '@/app/components/Calendar'
 
 interface Meeting {
   id: string
@@ -30,6 +31,8 @@ export default function Dashboard() {
     link: '',
   })
   const [userId, setUserId] = useState<string>('')
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
 
   const [localTitle, setLocalTitle] = useState<string>('')
   const [localTime, setLocalTime] = useState<string>('')
@@ -273,126 +276,164 @@ export default function Dashboard() {
     return format(now, "yyyy-MM-dd'T'HH:mm")
   }
 
+  const handleSelectMeeting = (meetingId: string) => {
+    const index = meetings.findIndex(meeting => meeting.id === meetingId)
+    if (index !== -1) {
+      setCurrentMeetingIndex(index)
+      setViewMode('list')
+      setIsAddingNewMeeting(false)
+    }
+  }
+
+  const handleChangeMonth = (amount: number) => {
+    setCurrentMonth(prev => addMonths(prev, amount))
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-black text-white">
-      <h1 className="text-4xl font-bold mb-12">MEETINGS</h1>
+      <h1 className="text-4xl font-bold mb-6">MEETINGS</h1>
+      
+      <div className="flex justify-center gap-4 mb-8">
+        <Button 
+          variant={viewMode === 'list' ? 'primary' : 'ghost'} 
+          onClick={() => setViewMode('list')}
+          className="flex items-center gap-2"
+        >
+          <List size={16} /> List View
+        </Button>
+        <Button 
+          variant={viewMode === 'calendar' ? 'primary' : 'ghost'} 
+          onClick={() => setViewMode('calendar')}
+          className="flex items-center gap-2"
+        >
+          <CalendarIcon size={16} /> Calendar
+        </Button>
+      </div>
 
-      <div className="w-full max-w-xl">
-        <div className="flex justify-between items-center mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigateMeeting('prev')}
-            disabled={currentMeetingIndex === 0 || isAddingNewMeeting || currentMeetingIndex === null}
-            className="disabled:opacity-50"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          <span className="text-lg">
-            {isAddingNewMeeting
-              ? 'New Meeting'
-              : meetings.length > 0 && currentMeetingIndex !== null
-              ? `${currentMeetingIndex + 1} / ${meetings.length}`
-              : 'No meetings'}
-          </span>
-          <Button
-            variant="ghost"
-            onClick={() => navigateMeeting('next')}
-            disabled={
-              isAddingNewMeeting ||
-              currentMeetingIndex === null ||
-              currentMeetingIndex >= meetings.length - 1
-            }
-            className="disabled:opacity-50"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
-
-        <div className="space-y-6">
-          <input
-            className="text-3xl font-semibold bg-transparent border-b-2 border-black focus:border-blue-400 w-full text-center placeholder-gray-400 text-white"
-            value={isAddingNewMeeting ? newMeeting.title : localTitle}
-            onChange={(e) => handleEdit('title', e.target.value)}
-            placeholder={isAddingNewMeeting ? 'Enter meeting title' : 'No title'}
-            disabled={!isAddingNewMeeting && currentMeeting.id === 'placeholder'}
-            onFocus={(e) => e.target.select()}
-          />
-
-          <div className="relative">
-            <input
-              className={`text-xl text-blue-300 bg-transparent border-b-2 border-black focus:border-blue-400 w-full text-center placeholder-gray-400 ${
-                !isAddingNewMeeting && currentMeeting.id === 'placeholder' ? 'cursor-not-allowed' : ''
-              }`}
-              value={
-                isAddingNewMeeting
-                  ? newMeeting.time
-                    ? formatToDateTimeLocal(newMeeting.time)
-                    : ''
-                  : localTime
+      {viewMode === 'calendar' ? (
+        <Calendar
+          meetings={meetings}
+          currentMonth={currentMonth}
+          onChangeMonth={handleChangeMonth}
+          onSelectMeeting={handleSelectMeeting}
+        />
+      ) : (
+        <div className="w-full max-w-xl">
+          <div className="flex justify-between items-center mb-8">
+            <Button
+              variant="ghost"
+              onClick={() => navigateMeeting('prev')}
+              disabled={currentMeetingIndex === 0 || isAddingNewMeeting || currentMeetingIndex === null}
+              className="disabled:opacity-50"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <span className="text-lg">
+              {isAddingNewMeeting
+                ? 'New Meeting'
+                : meetings.length > 0 && currentMeetingIndex !== null
+                ? `${currentMeetingIndex + 1} / ${meetings.length}`
+                : 'No meetings'}
+            </span>
+            <Button
+              variant="ghost"
+              onClick={() => navigateMeeting('next')}
+              disabled={
+                isAddingNewMeeting ||
+                currentMeetingIndex === null ||
+                currentMeetingIndex >= meetings.length - 1
               }
-              onChange={(e) => {
-                handleEdit('time', e.target.value)
-              }}
-              type="datetime-local"
-              placeholder={isAddingNewMeeting ? 'Select date and time' : 'No time set'}
+              className="disabled:opacity-50"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          </div>
+
+          <div className="space-y-6">
+            <input
+              className="text-3xl font-semibold bg-transparent border-b-2 border-black focus:border-blue-400 w-full text-center placeholder-gray-400 text-white"
+              value={isAddingNewMeeting ? newMeeting.title : localTitle}
+              onChange={(e) => handleEdit('title', e.target.value)}
+              placeholder={isAddingNewMeeting ? 'Enter meeting title' : 'No title'}
               disabled={!isAddingNewMeeting && currentMeeting.id === 'placeholder'}
-              min={isAddingNewMeeting ? getMinDateTimeLocal() : undefined}
               onFocus={(e) => e.target.select()}
             />
-            {timeError && (
-              <span className="absolute top-full left-0 mt-1 text-red-500 text-sm">
-                {timeError}
-              </span>
-            )}
-            {successMessage && (
-              <span className="absolute top-full left-0 mt-1 text-green-500 text-sm">
-                {successMessage}
-              </span>
+
+            <div className="relative">
+              <input
+                className={`text-xl text-blue-300 bg-transparent border-b-2 border-black focus:border-blue-400 w-full text-center placeholder-gray-400 ${
+                  !isAddingNewMeeting && currentMeeting.id === 'placeholder' ? 'cursor-not-allowed' : ''
+                }`}
+                value={
+                  isAddingNewMeeting
+                    ? newMeeting.time
+                      ? formatToDateTimeLocal(newMeeting.time)
+                      : ''
+                    : localTime
+                }
+                onChange={(e) => {
+                  handleEdit('time', e.target.value)
+                }}
+                type="datetime-local"
+                placeholder={isAddingNewMeeting ? 'Select date and time' : 'No time set'}
+                disabled={!isAddingNewMeeting && currentMeeting.id === 'placeholder'}
+                min={isAddingNewMeeting ? getMinDateTimeLocal() : undefined}
+                onFocus={(e) => e.target.select()}
+              />
+              {timeError && (
+                <span className="absolute top-full left-0 mt-1 text-red-500 text-sm">
+                  {timeError}
+                </span>
+              )}
+              {successMessage && (
+                <span className="absolute top-full left-0 mt-1 text-green-500 text-sm">
+                  {successMessage}
+                </span>
+              )}
+            </div>
+
+            <input
+              className="text-lg bg-transparent border-b-2 border-black focus:border-blue-400 w-full text-center placeholder-gray-400"
+              value={isAddingNewMeeting ? newMeeting.link : localLink}
+              onChange={(e) => handleEdit('link', e.target.value)}
+              placeholder={isAddingNewMeeting ? 'Enter meeting link (optional)' : 'No link'}
+              disabled={!isAddingNewMeeting && currentMeeting.id === 'placeholder'}
+              onFocus={(e) => e.target.select()}
+            />
+          </div>
+
+          <div className="mt-12 flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-4">
+            <Button onClick={addNewMeeting} variant="primary" className="w-full">
+              {isAddingNewMeeting ? 'Save Meeting' : 'New Meeting'}
+            </Button>
+
+            {!isAddingNewMeeting && meetings.length > 0 && currentMeetingIndex !== null && (
+              <Button variant="destructive" onClick={deleteMeeting} className="w-full">
+                Delete
+              </Button>
             )}
           </div>
 
-          <input
-            className="text-lg bg-transparent border-b-2 border-black focus:border-blue-400 w-full text-center placeholder-gray-400"
-            value={isAddingNewMeeting ? newMeeting.link : localLink}
-            onChange={(e) => handleEdit('link', e.target.value)}
-            placeholder={isAddingNewMeeting ? 'Enter meeting link (optional)' : 'No link'}
-            disabled={!isAddingNewMeeting && currentMeeting.id === 'placeholder'}
-            onFocus={(e) => e.target.select()}
-          />
-        </div>
-
-        <div className="mt-12 flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-4">
-          <Button onClick={addNewMeeting} variant="primary" className="w-full">
-            {isAddingNewMeeting ? 'Save Meeting' : 'New Meeting'}
-          </Button>
-
-          {!isAddingNewMeeting && meetings.length > 0 && currentMeetingIndex !== null && (
-            <Button variant="destructive" onClick={deleteMeeting} className="w-full">
-              Delete
-            </Button>
+          {!isAddingNewMeeting && currentMeeting.link && currentMeeting.link.trim() !== '' && (
+            <div className="mt-8 text-center">
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => {
+                  const meetingLink = currentMeeting.link.trim();
+                  if (meetingLink) {
+                    const isAbsoluteURL = /^https?:\/\//.test(meetingLink);
+                    const formattedLink = isAbsoluteURL ? meetingLink : `https://${meetingLink}`;
+                    window.open(formattedLink, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+              >
+                Join Meeting
+              </Button>
+            </div>
           )}
         </div>
-
-        {!isAddingNewMeeting && currentMeeting.link && currentMeeting.link.trim() !== '' && (
-          <div className="mt-8 text-center">
-  <Button
-    variant="primary"
-    className="w-full"
-    onClick={() => {
-      const meetingLink = currentMeeting.link.trim();
-      if (meetingLink) {
-        const isAbsoluteURL = /^https?:\/\//.test(meetingLink);
-        const formattedLink = isAbsoluteURL ? meetingLink : `https://${meetingLink}`;
-        window.open(formattedLink, '_blank', 'noopener,noreferrer');
-      }
-    }}
-  >
-    Join Meeting
-  </Button>
-</div>
-
-        )}
-      </div>
+      )}
     </div>
   )
 }
