@@ -354,7 +354,7 @@ export default function Dashboard() {
           onClick={() => setViewMode('list')}
           className="flex items-center gap-2"
         >
-          <List size={16} /> List View
+          <List size={16} /> List
         </Button>
         <Button 
           variant={viewMode === 'calendar' ? 'primary' : 'ghost'} 
