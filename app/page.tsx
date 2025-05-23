@@ -393,7 +393,7 @@ export default function Dashboard() {
                   rel="noopener noreferrer"
                   className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded mt-2"
                 >
-                  Add to Google Calendar by URL
+                  Add to Google Calendar
                 </a>
                 <div className="text-xs text-gray-400 mt-2">
                   {/* This will add it as a calendar by URL.<br/> */}
