@@ -3,6 +3,8 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, i
 import Button from '@/app/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
+// @ts-ignore
+import { saveAs } from 'file-saver'
 
 interface Meeting {
   id: string
@@ -17,6 +19,7 @@ interface CalendarProps {
   currentMonth: Date
   onChangeMonth: (amount: number) => void
   onSelectMeeting: (meetingId: string) => void
+  onExportICS?: () => void
 }
 
 const MeetingTooltip: React.FC<{
@@ -127,12 +130,14 @@ const Calendar: React.FC<CalendarProps> = ({
   meetings, 
   currentMonth, 
   onChangeMonth, 
-  onSelectMeeting 
+  onSelectMeeting,
 }) => {
   const [activeMeeting, setActiveMeeting] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
-  
+  const [multiTooltipOpen, setMultiTooltipOpen] = useState(false);
+  const multiTooltipTimer = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
@@ -237,6 +242,46 @@ const Calendar: React.FC<CalendarProps> = ({
     
     meetingsByDay[dateKey].push(meeting)
   })
+
+//   const downloadICS = () => {
+//     const pad = (n: number) => n.toString().padStart(2, '0');
+//     const formatICSDate = (date: Date) => {
+//       return date.getUTCFullYear() +
+//         pad(date.getUTCMonth() + 1) +
+//         pad(date.getUTCDate()) + 'T' +
+//         pad(date.getUTCHours()) +
+//         pad(date.getUTCMinutes()) +
+//         pad(date.getUTCSeconds()) + 'Z';
+//     };
+//     let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
+//     meetings.forEach(meeting => {
+//       const start = new Date(meeting.time);
+//       const end = new Date(start.getTime() + 60 * 60 * 1000);
+//       ics += 'BEGIN:VEVENT\n';
+//       ics += `SUMMARY:${meeting.title}\n`;
+//       ics += `DTSTART:${formatICSDate(start)}\n`;
+//       ics += `DTEND:${formatICSDate(end)}\n`;
+//       ics += `DESCRIPTION:${meeting.link || ''}\n`;
+//       ics += `UID:${meeting.id}@meeting-dashboard\n`;
+//       ics += 'END:VEVENT\n';
+//     });
+//     ics += 'END:VCALENDAR';
+//     const blob = new Blob([ics], { type: 'text/calendar' });
+//     saveAs(blob, 'meetings.ics');
+//   };
+
+  const handleMultiMouseEnter = () => {
+    if (multiTooltipTimer.current) clearTimeout(multiTooltipTimer.current);
+    setMultiTooltipOpen(true);
+    setActiveMeeting('multiple');
+  };
+  const handleMultiMouseLeave = () => {
+    if (multiTooltipTimer.current) clearTimeout(multiTooltipTimer.current);
+    multiTooltipTimer.current = setTimeout(() => {
+      setMultiTooltipOpen(false);
+      setActiveMeeting(null);
+    }, 180);
+  };
 
   return (
     <div className={`w-full max-w-4xl flex flex-col ${
@@ -381,22 +426,14 @@ const Calendar: React.FC<CalendarProps> = ({
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveMeeting(activeMeeting === 'multiple' ? null : 'multiple');
+                          setMultiTooltipOpen(true);
                         }}
-                        onMouseEnter={(e) => {
-                          if (!isMobile) {
-                            e.stopPropagation();
-                            setActiveMeeting('multiple');
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isMobile) {
-                            e.stopPropagation();
-                            setActiveMeeting(null);
-                          }
-                        }}
+                        onMouseEnter={handleMultiMouseEnter}
+                        onMouseLeave={handleMultiMouseLeave}
                         onTouchStart={(e) => {
                           e.stopPropagation();
                           setActiveMeeting('multiple');
+                          setMultiTooltipOpen(true);
                         }}
                       >
                         <span className="inline-block">
@@ -424,11 +461,13 @@ const Calendar: React.FC<CalendarProps> = ({
                               boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)'
                             }}
                             onClick={(e) => e.stopPropagation()}
+                            onMouseEnter={handleMultiMouseEnter}
+                            onMouseLeave={handleMultiMouseLeave}
                           >
                             <h3 className={`font-semibold mb-1.5 ${isMobile ? 'text-[11px]' : 'text-sm'}`}>
                               {format(day, isMobile ? 'MMM d' : 'MMMM d, yyyy')}
                             </h3>
-                            <div className={`overflow-y-auto ${isMobile ? 'max-h-[100px]' : 'max-h-[150px]'}`}>
+                            <div className={`overflow-y-auto ${isMobile ? 'max-h-[100px]' : 'max-h-[150px]'} custom-scrollbar`}>
                               {dayMeetings.map(meeting => (
                                 <div 
                                   key={meeting.id} 
@@ -474,5 +513,20 @@ const Calendar: React.FC<CalendarProps> = ({
     </div>
   )
 }
+
+/*
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: #222;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3a86ff;
+  border-radius: 6px;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3a86ff #222;
+}
+*/
 
 export default Calendar

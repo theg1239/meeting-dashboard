@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, Share2 } from 'lucide-react'
 import useSWR from 'swr'
 import Button from '@/app/components/ui/button'
 import { v4 as uuidv4 } from 'uuid'
@@ -41,6 +41,11 @@ export default function Dashboard() {
   const [successMessage, setSuccessMessage] = useState<string>('')
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
+
+  const [icsModalOpen, setIcsModalOpen] = useState(false)
+  const [icsUrl, setIcsUrl] = useState<string | null>(null)
+  const [icsUploading, setIcsUploading] = useState(false)
+  const [icsError, setIcsError] = useState<string | null>(null)
 
   useEffect(() => {
     let storedUserId = getCookie('user-id')
@@ -289,11 +294,61 @@ export default function Dashboard() {
     setCurrentMonth(prev => addMonths(prev, amount))
   }
 
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const formatICSDate = (date: Date) => {
+    return date.getUTCFullYear() +
+      pad(date.getUTCMonth() + 1) +
+      pad(date.getUTCDate()) + 'T' +
+      pad(date.getUTCHours()) +
+      pad(date.getUTCMinutes()) +
+      pad(date.getUTCSeconds()) + 'Z';
+  };
+  const generateICS = () => {
+    let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\nX-WR-CALNAME:acm.today\n';
+    meetings.forEach(meeting => {
+      const start = new Date(meeting.time);
+      const end = new Date(start.getTime() + 60 * 60 * 1000); 
+      ics += 'BEGIN:VEVENT\n';
+      ics += `SUMMARY:${meeting.title}\n`;
+      ics += `DTSTART:${formatICSDate(start)}\n`;
+      ics += `DTEND:${formatICSDate(end)}\n`;
+      ics += `DESCRIPTION:${meeting.link || ''}\n`;
+      ics += `UID:${meeting.id}@meeting-dashboard\n`;
+      ics += 'END:VEVENT\n';
+    });
+    ics += 'END:VCALENDAR';
+    return ics;
+  };
+
+  const handleExportICS = async () => {
+    setIcsUploading(true)
+    setIcsError(null)
+    setIcsUrl(null)
+    try {
+      const ics = generateICS()
+      const file = new File([ics], 'meetings.ics', { type: 'text/calendar' })
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('https://cli-calendar.acmvit.in/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      if (!res.ok) throw new Error('Upload failed')
+      const data = await res.json()
+      setIcsUrl(data.url)
+      setIcsModalOpen(true)
+    } catch (e: any) {
+      setIcsError(e.message || 'Failed to export')
+    } finally {
+      setIcsUploading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-black text-white">
       <h1 className="text-4xl font-bold mb-6">MEETINGS</h1>
       
-      <div className="flex justify-center gap-4 mb-8">
+      <div className="flex justify-center gap-4 mb-8 items-center">
         <Button 
           variant={viewMode === 'list' ? 'primary' : 'ghost'} 
           onClick={() => setViewMode('list')}
@@ -308,14 +363,53 @@ export default function Dashboard() {
         >
           <CalendarIcon size={16} /> Calendar
         </Button>
+        <button
+          className="ml-2 p-2 rounded-full hover:bg-blue-900 transition-colors border border-blue-400"
+          title="Export & Share Calendar"
+          onClick={handleExportICS}
+          disabled={icsUploading}
+        >
+          <Share2 size={18} className={icsUploading ? 'animate-spin' : ''} />
+        </button>
       </div>
-
+      {icsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-gray-900 border-2 border-blue-400 rounded-lg p-6 max-w-xs w-full relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl"
+              onClick={() => setIcsModalOpen(false)}
+            >
+              ×
+            </button>
+            <h3 className="text-lg font-bold text-blue-300 mb-2">Share Calendar</h3>
+            {icsUploading && <div className="text-white mb-2">Uploading...</div>}
+            {icsError && <div className="text-red-400 mb-2">{icsError}</div>}
+            {icsUrl && (
+              <>
+                {/* <div className="mb-2 break-all text-blue-400 text-xs">ICS Link: <a href={icsUrl} target="_blank" rel="noopener noreferrer" className="underline">{icsUrl}</a></div> */}
+                <a
+                  href={`https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(icsUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded mt-2"
+                >
+                  Add to Google Calendar by URL
+                </a>
+                <div className="text-xs text-gray-400 mt-2">
+                  {/* This will add it as a calendar by URL.<br/> */}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       {viewMode === 'calendar' ? (
         <Calendar
           meetings={meetings}
           currentMonth={currentMonth}
           onChangeMonth={handleChangeMonth}
           onSelectMeeting={handleSelectMeeting}
+          onExportICS={handleExportICS}
         />
       ) : (
         <div className="w-full max-w-xl">
@@ -406,12 +500,6 @@ export default function Dashboard() {
             <Button onClick={addNewMeeting} variant="primary" className="w-full">
               {isAddingNewMeeting ? 'Save Meeting' : 'New Meeting'}
             </Button>
-
-            {/* {!isAddingNewMeeting && meetings.length > 0 && currentMeetingIndex !== null && (
-              <Button variant="destructive" onClick={deleteMeeting} className="w-full">
-                Delete
-              </Button>
-            )} */}
           </div>
 
           {!isAddingNewMeeting && currentMeeting.link && currentMeeting.link.trim() !== '' && (

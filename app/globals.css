@@ -39,3 +39,16 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: #222;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3a86ff;
+  border-radius: 6px;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3a86ff #222;
+}
+
